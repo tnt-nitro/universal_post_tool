@@ -78,6 +78,13 @@ QLabel#uptimeLabel {
     font-weight: bold;
 }
 
+QLabel#postTimerLabel {
+    background-color: #e8e8e8;
+    color: #000000;
+    border-radius: 6px;
+    padding: 4px 8px;
+}
+
 QLabel#positionStatus {
     background-color: #e0e0e0;
     color: #000000;
@@ -150,6 +157,13 @@ QLabel#uptimeLabel {
     font-weight: bold;
 }
 
+QLabel#postTimerLabel {
+    background-color: #2b2b2b;
+    color: white;
+    border-radius: 6px;
+    padding: 4px 8px;
+}
+
 QLabel#positionStatus {
     background-color: #3a3a3a;
     color: white;
@@ -174,6 +188,11 @@ class MainWindow(QMainWindow):
         self.position_status = QLabel("Bereit – keine Position")
         self.position_status.setObjectName("positionStatus")
         self.position_status.setAlignment(
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+
+        self.post_timer_label = QLabel("Seit letztem Post: 00:00:00")
+        self.post_timer_label.setObjectName("postTimerLabel")
+        self.post_timer_label.setAlignment(
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
 
         self.uptime_label = QLabel("Laufzeit: 00:00:00")
@@ -254,6 +273,7 @@ class MainWindow(QMainWindow):
         time_layout.addWidget(self.timestamp_label)
         time_layout.addWidget(self.position_status)
         time_layout.addStretch()
+        time_layout.addWidget(self.post_timer_label)
         time_layout.addWidget(self.uptime_label)
         layout.addLayout(time_layout)
 
@@ -276,23 +296,33 @@ class MainWindow(QMainWindow):
 
         # Recorder-Zustand initialisieren
         self.recorder_state = "idle"
+        self.countdown_remaining = 0
+        self.record_remaining = 0
         self.update_recorder_ui()
 
-        # Timer für Recorder
-        self.record_timer = QTimer(self)
-        self.record_timer.setSingleShot(True)
-        self.record_timer.timeout.connect(self.record_timeout)
+        # Timer für Countdown
+        self.countdown_timer = QTimer(self)
+        self.countdown_timer.timeout.connect(self.on_countdown_tick)
+
+        # Timer für Recording-Window
+        self.recording_timer = QTimer(self)
+        self.recording_timer.timeout.connect(self.on_recording_tick)
 
         # Startzeit für Laufzeit-Anzeige
         self.start_time = datetime.now()
 
-        # Timer für Live-Timestamp-Vorschau und Laufzeit
+        # Startzeit für Post-Timer
+        self.last_post_time = datetime.now()
+
+        # Timer für Live-Timestamp-Vorschau, Laufzeit und Post-Timer
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_timestamp)
         self.timer.timeout.connect(self.update_uptime)
+        self.timer.timeout.connect(self.update_post_timer)
         self.timer.start(1000)  # Aktualisiert jede Sekunde
         self.update_timestamp()  # Initiale Anzeige
         self.update_uptime()  # Initiale Laufzeit-Anzeige
+        self.update_post_timer()  # Initiale Post-Timer-Anzeige
 
     def on_copy_and_send(self):
         user_text = self.text_edit.toPlainText()
@@ -303,6 +333,8 @@ class MainWindow(QMainWindow):
         try:
             send_to_chatgpt(final_text)
             self.statusBar().showMessage("Gesendet an ChatGPT", 5000)
+            # Post-Timer zurücksetzen
+            self.last_post_time = datetime.now()
         except Exception as e:
             self.statusBar().showMessage(str(e), 5000)
 
@@ -329,6 +361,16 @@ class MainWindow(QMainWindow):
         s = seconds % 60
         self.uptime_label.setText(f"Laufzeit: {h:02}:{m:02}:{s:02}")
 
+    def update_post_timer(self):
+        """Aktualisiert die Anzeige 'Zeit seit letztem Post'."""
+        delta = datetime.now() - self.last_post_time
+        seconds = int(delta.total_seconds())
+        h = seconds // 3600
+        m = (seconds % 3600) // 60
+        s = seconds % 60
+        self.post_timer_label.setText(
+            f"Seit letztem Post: {h:02}:{m:02}:{s:02}")
+
     def clear_text(self):
         """Löscht den Text im Textfeld."""
         self.text_edit.clear()
@@ -345,15 +387,48 @@ class MainWindow(QMainWindow):
             return
 
         if self.recorder_state == "idle":
-            self.recorder_state = "recording"
+            self.recorder_state = "countdown"
+            self.countdown_remaining = 3
             self.update_recorder_ui()
 
+            # Button in Countdown sperren
             self.btn_learn.setEnabled(False)
             QTimer.singleShot(3000, lambda: self.btn_learn.setEnabled(True))
 
-            self.record_timer.start(10000)
-            threading.Thread(target=self.start_mouse_recording,
-                             daemon=True).start()
+            self.countdown_timer.start(1000)
+
+    def on_countdown_tick(self):
+        """Wird jede Sekunde während des Countdowns aufgerufen."""
+        self.countdown_remaining -= 1
+        if self.countdown_remaining <= 0:
+            self.countdown_timer.stop()
+            self.start_recording_window()
+            return
+        self.update_recorder_ui()
+
+    def start_recording_window(self):
+        """Startet das 10-Sekunden-Aufnahmefenster."""
+        self.recorder_state = "recording"
+        self.record_remaining = 10
+        self.update_recorder_ui()
+
+        # Mauslistener starten
+        threading.Thread(target=self.start_mouse_recording,
+                         daemon=True).start()
+
+        self.recording_timer.start(1000)
+
+    def on_recording_tick(self):
+        """Wird jede Sekunde während des Recording-Windows aufgerufen."""
+        self.record_remaining -= 1
+        if self.record_remaining <= 0:
+            self.recording_timer.stop()
+            if self.recorder_state == "recording":
+                # kein Klick erfolgt -> Reset
+                self.recorder_state = "idle"
+                self.update_recorder_ui()
+            return
+        self.update_recorder_ui()
 
     def start_mouse_recording(self):
         """Startet den Mauslistener für die Positionsaufnahme."""
@@ -365,17 +440,14 @@ class MainWindow(QMainWindow):
             config["chatgpt_input"] = [x, y]
             save_config(config)
 
-            self.record_timer.stop()
+            # Beide Timer stoppen
+            self.countdown_timer.stop()
+            self.recording_timer.stop()
+
             self.recorder_state = "ready"
             self.update_recorder_ui()
 
         record_once(on_position)
-
-    def record_timeout(self):
-        """Wird aufgerufen, wenn das 10-Sekunden-Aufnahmefenster abläuft."""
-        if self.recorder_state == "recording":
-            self.recorder_state = "idle"
-            self.update_recorder_ui()
 
     def update_recorder_ui(self):
         """Aktualisiert die UI basierend auf dem Recorder-Zustand."""
@@ -385,8 +457,16 @@ class MainWindow(QMainWindow):
                 "background-color: #a0a0a0; color: black;")
             self.btn_learn.setStyleSheet("background-color: #a0a0a0;")
 
+        elif self.recorder_state == "countdown":
+            self.position_status.setText(
+                f"Aufnahme in: {self.countdown_remaining}")
+            self.position_status.setStyleSheet(
+                "background-color: #f0ad4e; color: black;")
+            self.btn_learn.setStyleSheet("background-color: #f0ad4e;")
+
         elif self.recorder_state == "recording":
-            self.position_status.setText("Warte auf Klick…")
+            self.position_status.setText(
+                f"Warte auf Klick… ({self.record_remaining})")
             self.position_status.setStyleSheet(
                 "background-color: #d9534f; color: white;")
             self.btn_learn.setStyleSheet("background-color: #d9534f;")
