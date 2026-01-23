@@ -210,6 +210,7 @@ class MainWindow(QMainWindow):
         self.copy_button = QPushButton("In Zwischenablage kopieren")
         self.copy_button.setObjectName("copyButton")
         self.copy_button.setFixedHeight(36)
+        self.copy_button.setEnabled(False)  # Initial deaktiviert - Ziel erforderlich
         self.copy_button.clicked.connect(self.on_copy_and_send)
 
         # Format-Buttons vertikal links
@@ -341,6 +342,11 @@ class MainWindow(QMainWindow):
         self.update_post_timer()  # Initiale Post-Timer-Anzeige
 
     def on_copy_and_send(self):
+        # Schutz: Nur möglich wenn Ziel aktiv ist
+        if self.recorder_state != "ready":
+            self.statusBar().showMessage("Kein Ziel aktiv – Übertragen nicht möglich", 3000)
+            return
+
         user_text = self.text_edit.toPlainText()
         timestamp = generate_timestamp()
         final_text = f"{timestamp}\n\n{user_text}"
@@ -411,6 +417,7 @@ class MainWindow(QMainWindow):
             save_config(config)
             self.recorder_state = "idle"
             self.update_recorder_ui()
+            self.copy_button.setEnabled(False)  # Button deaktivieren bei Reset
             return
 
         if self.recorder_state == "idle":
@@ -454,6 +461,7 @@ class MainWindow(QMainWindow):
                 # kein Klick erfolgt -> Reset
                 self.recorder_state = "idle"
                 self.update_recorder_ui()
+                self.copy_button.setEnabled(False)  # Button deaktivieren bei Timeout
             return
         self.update_recorder_ui()
 
@@ -473,6 +481,7 @@ class MainWindow(QMainWindow):
 
             self.recorder_state = "ready"
             self.update_recorder_ui()
+            self.copy_button.setEnabled(True)  # Button aktivieren wenn Ziel gesetzt
 
         record_once(on_position)
 
