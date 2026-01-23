@@ -39,6 +39,17 @@ QPushButton#copyButton:hover {
     background-color: #5fa8ff;
 }
 
+QPushButton#transferActive {
+    background-color: #f0ad4e;
+    color: black;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+QPushButton#transferActive:hover {
+    background-color: #f0ad4e;
+}
+
 QPushButton#themeButton {
     background-color: #e0e0e0;
     color: #000000;
@@ -365,6 +376,13 @@ class MainWindow(QMainWindow):
         # Button sperren
         self.copy_button.setEnabled(False)
 
+        # Button visuell hervorheben (gelb/orange)
+        self.copy_button.setObjectName("transferActive")
+        if self.is_dark:
+            self.setStyleSheet(DARK_THEME)
+        else:
+            self.setStyleSheet(LIGHT_THEME)
+
         # Text vorbereiten
         user_text = self.text_edit.toPlainText()
         timestamp = generate_timestamp()
@@ -409,11 +427,21 @@ class MainWindow(QMainWindow):
             # Zähler erhöhen
             self.transfer_count += 1
             self.update_transfer_button()
-            # Button wieder aktivieren
+            # Button wieder aktivieren und visuell zurücksetzen
+            self.copy_button.setObjectName("copyButton")
+            if self.is_dark:
+                self.setStyleSheet(DARK_THEME)
+            else:
+                self.setStyleSheet(LIGHT_THEME)
             self.copy_button.setEnabled(True)
         except Exception as e:
             self.statusBar().showMessage(str(e), 5000)
-            # Bei Fehler: Button wieder aktivieren und Zähler zurücksetzen
+            # Bei Fehler: Button wieder aktivieren und visuell zurücksetzen
+            self.copy_button.setObjectName("copyButton")
+            if self.is_dark:
+                self.setStyleSheet(DARK_THEME)
+            else:
+                self.setStyleSheet(LIGHT_THEME)
             self.update_transfer_button()
             self.copy_button.setEnabled(True)
 
