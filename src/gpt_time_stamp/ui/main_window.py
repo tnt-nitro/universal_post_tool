@@ -61,6 +61,17 @@ QPushButton#formatButton:hover {
     background-color: #d0d0d0;
 }
 
+QPushButton#dangerButton {
+    background-color: #d9534f;
+    color: white;
+    border-radius: 6px;
+    padding: 6px;
+}
+
+QPushButton#dangerButton:hover {
+    background-color: #c9302c;
+}
+
 QLabel#timestampLabel {
     background-color: #e8e8e8;
     color: #000000;
@@ -140,6 +151,17 @@ QPushButton#formatButton:hover {
     background-color: #4a4a4a;
 }
 
+QPushButton#dangerButton {
+    background-color: #d9534f;
+    color: white;
+    border-radius: 6px;
+    padding: 6px;
+}
+
+QPushButton#dangerButton:hover {
+    background-color: #c9302c;
+}
+
 QLabel#timestampLabel {
     background-color: #2b2b2b;
     color: #ffffff;
@@ -186,7 +208,7 @@ class MainWindow(QMainWindow):
         self.timestamp_label.setAlignment(
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
 
-        self.position_status = QLabel("Bereit – keine Position")
+        self.position_status = QLabel("Kein Ziel aktiv")
         self.position_status.setObjectName("positionStatus")
         self.position_status.setAlignment(
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
@@ -210,6 +232,7 @@ class MainWindow(QMainWindow):
         self.copy_button = QPushButton("In Zwischenablage kopieren")
         self.copy_button.setObjectName("copyButton")
         self.copy_button.setFixedHeight(36)
+        self.copy_button.setToolTip("In Zwischenablage kopieren")
         self.copy_button.clicked.connect(self.on_copy_and_send)
 
         # Format-Buttons vertikal links
@@ -221,6 +244,7 @@ class MainWindow(QMainWindow):
         self.btn_learn = QPushButton("🎯")
         self.btn_learn.setObjectName("formatButton")
         self.btn_learn.setFixedSize(BUTTON_SIZE, BUTTON_SIZE)
+        self.btn_learn.setToolTip("Ziel festlegen")
         self.btn_learn.clicked.connect(self.learn_send_position)
 
         btn_spacer = QPushButton("")
@@ -231,6 +255,7 @@ class MainWindow(QMainWindow):
         btn_emoji = QPushButton("😃")
         btn_emoji.setObjectName("formatButton")
         btn_emoji.setFixedSize(BUTTON_SIZE, BUTTON_SIZE)
+        btn_emoji.setToolTip("Emoji einfügen")
         btn_emoji.clicked.connect(self.open_emoji_picker)
 
         btn_code = QPushButton("```")
@@ -247,6 +272,11 @@ class MainWindow(QMainWindow):
         btn_bold.setObjectName("formatButton")
         btn_italic.setObjectName("formatButton")
         btn_strike.setObjectName("formatButton")
+
+        btn_code.setToolTip("Codeblock einfügen")
+        btn_bold.setToolTip("Fett markieren")
+        btn_italic.setToolTip("Kursiv markieren")
+        btn_strike.setToolTip("Durchstreichen")
 
         # Alle Format-Buttons auf gleiche Größe setzen
         btn_code.setFixedSize(BUTTON_SIZE, BUTTON_SIZE)
@@ -267,8 +297,9 @@ class MainWindow(QMainWindow):
             Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
 
         btn_clear = QPushButton("🗑️")
-        btn_clear.setObjectName("formatButton")
+        btn_clear.setObjectName("dangerButton")
         btn_clear.setFixedSize(BUTTON_SIZE, BUTTON_SIZE)
+        btn_clear.setToolTip("Text löschen")
         btn_clear.clicked.connect(self.clear_text)
 
         bottom_layout = QHBoxLayout()
@@ -348,7 +379,7 @@ class MainWindow(QMainWindow):
 
         try:
             send_to_chatgpt(final_text)
-            self.statusBar().showMessage("Gesendet an ChatGPT", 5000)
+            self.statusBar().showMessage("Gesendet", 5000)
             # Post-Timer zurücksetzen
             self.last_post_time = datetime.now()
         except Exception as e:
@@ -404,7 +435,7 @@ class MainWindow(QMainWindow):
         self.text_edit.setFocus()
 
     def learn_send_position(self):
-        """Lernt die Sendeposition von ChatGPT."""
+        """Lernt die Zielposition."""
         if self.recorder_state == "ready":
             config = load_config()
             config["chatgpt_input"] = None
@@ -458,7 +489,7 @@ class MainWindow(QMainWindow):
         self.update_recorder_ui()
 
     def start_mouse_recording(self):
-        """Startet den Mauslistener für die Positionsaufnahme."""
+        """Startet den Mauslistener für die Zielaufnahme."""
         def on_position(x, y):
             if self.recorder_state != "recording":
                 return
@@ -479,7 +510,7 @@ class MainWindow(QMainWindow):
     def update_recorder_ui(self):
         """Aktualisiert die UI basierend auf dem Recorder-Zustand."""
         if self.recorder_state == "idle":
-            self.position_status.setText("Bereit – keine Position")
+            self.position_status.setText("Kein Ziel aktiv")
             self.position_status.setStyleSheet(
                 "background-color: #a0a0a0; color: black;")
             self.btn_learn.setStyleSheet("background-color: #a0a0a0;")
@@ -493,7 +524,7 @@ class MainWindow(QMainWindow):
 
         elif self.recorder_state == "recording":
             self.position_status.setText(
-                f"Warte auf Klick… ({self.record_remaining})")
+                f"Warte auf Ziel… ({self.record_remaining})")
             self.position_status.setStyleSheet(
                 "background-color: #d9534f; color: white;")
             self.btn_learn.setStyleSheet("background-color: #d9534f;")
@@ -504,7 +535,7 @@ class MainWindow(QMainWindow):
             if pos:
                 self.position_status.setText(f"X: {pos[0]} | Y: {pos[1]}")
             else:
-                self.position_status.setText("Position gespeichert")
+                self.position_status.setText("Ziel gespeichert")
             self.position_status.setStyleSheet(
                 "background-color: #5cb85c; color: white;")
             self.btn_learn.setStyleSheet("background-color: #5cb85c;")
