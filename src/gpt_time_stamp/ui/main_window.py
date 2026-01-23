@@ -203,14 +203,15 @@ class MainWindow(QMainWindow):
 
         self.text_edit = QTextEdit()
         self.text_edit.setPlaceholderText("Text eingeben…")
-        
+
         # Codeblock-Highlighter aktivieren
         self.highlighter = CodeBlockHighlighter(self.text_edit.document())
 
-        self.copy_button = QPushButton("In Zwischenablage kopieren")
+        self.copy_button = QPushButton("Übertragen (0)")
         self.copy_button.setObjectName("copyButton")
         self.copy_button.setFixedHeight(36)
-        self.copy_button.setEnabled(False)  # Initial deaktiviert - Ziel erforderlich
+        # Initial deaktiviert - Ziel erforderlich
+        self.copy_button.setEnabled(False)
         self.copy_button.clicked.connect(self.on_copy_and_send)
 
         # Format-Buttons vertikal links
@@ -331,6 +332,10 @@ class MainWindow(QMainWindow):
         # Startzeit für Post-Timer
         self.last_post_time = datetime.now()
 
+        # Übertragen-Zähler initialisieren
+        self.transfer_count = 0
+        self.update_transfer_button()
+
         # Timer für Live-Timestamp-Vorschau, Laufzeit und Post-Timer
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_timestamp)
@@ -357,6 +362,9 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Gesendet an ChatGPT", 5000)
             # Post-Timer zurücksetzen
             self.last_post_time = datetime.now()
+            # Zähler erhöhen
+            self.transfer_count += 1
+            self.update_transfer_button()
         except Exception as e:
             self.statusBar().showMessage(str(e), 5000)
 
@@ -408,6 +416,13 @@ class MainWindow(QMainWindow):
         """Löscht den Text im Textfeld."""
         self.text_edit.clear()
         self.text_edit.setFocus()
+        # Zähler zurücksetzen
+        self.transfer_count = 0
+        self.update_transfer_button()
+
+    def update_transfer_button(self):
+        """Aktualisiert den Text des Übertragen-Buttons mit aktuellem Zähler."""
+        self.copy_button.setText(f"Übertragen ({self.transfer_count})")
 
     def learn_send_position(self):
         """Lernt die Sendeposition von ChatGPT."""
@@ -461,7 +476,8 @@ class MainWindow(QMainWindow):
                 # kein Klick erfolgt -> Reset
                 self.recorder_state = "idle"
                 self.update_recorder_ui()
-                self.copy_button.setEnabled(False)  # Button deaktivieren bei Timeout
+                # Button deaktivieren bei Timeout
+                self.copy_button.setEnabled(False)
             return
         self.update_recorder_ui()
 
@@ -481,7 +497,8 @@ class MainWindow(QMainWindow):
 
             self.recorder_state = "ready"
             self.update_recorder_ui()
-            self.copy_button.setEnabled(True)  # Button aktivieren wenn Ziel gesetzt
+            # Button aktivieren wenn Ziel gesetzt
+            self.copy_button.setEnabled(True)
 
         record_once(on_position)
 
