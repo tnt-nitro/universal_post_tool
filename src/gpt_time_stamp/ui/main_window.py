@@ -210,9 +210,9 @@ class MainWindow(QMainWindow):
 
         self.position_status = QLabel("Kein Ziel aktiv")
         self.position_status.setObjectName("positionStatus")
-        self.position_status.setAlignment(
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-        self.position_status.setFixedWidth(122)  # Feste Breite für konsistentes Layout
+        self.position_status.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # Feste Breite für konsistentes Layout
+        self.position_status.setFixedWidth(130)
 
         self.post_timer_label = QLabel("Seit letztem Post: 00:00:00")
         self.post_timer_label.setObjectName("postTimerLabel")
@@ -226,7 +226,7 @@ class MainWindow(QMainWindow):
 
         self.text_edit = QTextEdit()
         self.text_edit.setPlaceholderText("Text eingeben…")
-        
+
         # Codeblock-Highlighter aktivieren
         self.highlighter = CodeBlockHighlighter(self.text_edit.document())
 
