@@ -129,6 +129,17 @@ QPushButton#copyButton:hover {
     background-color: #5fa8ff;
 }
 
+QPushButton#transferActive {
+    background-color: #f0ad4e;
+    color: black;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+QPushButton#transferActive:hover {
+    background-color: #f0ad4e;
+}
+
 QPushButton#themeButton {
     background-color: #3a3a3a;
     color: white;
