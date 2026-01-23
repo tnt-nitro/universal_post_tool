@@ -12,6 +12,7 @@ from gpt_time_stamp.core.position_recorder import record_send_position, record_o
 from gpt_time_stamp.core.config import load_config, save_config
 from gpt_time_stamp.core.sender import send_to_chatgpt
 from gpt_time_stamp.core.constants import APP_TITLE, APP_VERSION, WINDOW_WIDTH, WINDOW_HEIGHT
+from gpt_time_stamp.ui.code_highlighter import CodeBlockHighlighter
 
 
 LIGHT_THEME = """
@@ -202,6 +203,9 @@ class MainWindow(QMainWindow):
 
         self.text_edit = QTextEdit()
         self.text_edit.setPlaceholderText("Text eingeben…")
+        
+        # Codeblock-Highlighter aktivieren
+        self.highlighter = CodeBlockHighlighter(self.text_edit.document())
 
         self.copy_button = QPushButton("In Zwischenablage kopieren")
         self.copy_button.setObjectName("copyButton")
@@ -218,6 +222,16 @@ class MainWindow(QMainWindow):
         self.btn_learn.setObjectName("formatButton")
         self.btn_learn.setFixedSize(BUTTON_SIZE, BUTTON_SIZE)
         self.btn_learn.clicked.connect(self.learn_send_position)
+
+        btn_spacer = QPushButton("")
+        btn_spacer.setFixedSize(BUTTON_SIZE, BUTTON_SIZE)
+        btn_spacer.setEnabled(False)
+        btn_spacer.setStyleSheet("background: transparent; border: none;")
+
+        btn_emoji = QPushButton("😃")
+        btn_emoji.setObjectName("formatButton")
+        btn_emoji.setFixedSize(BUTTON_SIZE, BUTTON_SIZE)
+        btn_emoji.clicked.connect(self.open_emoji_picker)
 
         btn_code = QPushButton("```")
         btn_bold = QPushButton("**")
@@ -241,6 +255,8 @@ class MainWindow(QMainWindow):
         btn_strike.setFixedSize(BUTTON_SIZE, BUTTON_SIZE)
 
         self.format_layout.insertWidget(0, self.btn_learn)
+        self.format_layout.insertWidget(1, btn_spacer)
+        self.format_layout.insertWidget(2, btn_emoji)
         self.format_layout.addWidget(btn_code)
         self.format_layout.addWidget(btn_bold)
         self.format_layout.addWidget(btn_italic)
@@ -370,6 +386,17 @@ class MainWindow(QMainWindow):
         s = seconds % 60
         self.post_timer_label.setText(
             f"Seit letztem Post: {h:02}:{m:02}:{s:02}")
+
+    def open_emoji_picker(self):
+        """Öffnet den Windows-Emoji-Picker (WIN + .)."""
+        try:
+            import pyautogui
+            # Fokus ins Textfeld setzen
+            self.text_edit.setFocus()
+            # Windows Emoji-Picker öffnen
+            pyautogui.hotkey("win", ".")
+        except Exception as e:
+            self.statusBar().showMessage(f"Emoji nicht verfügbar: {e}", 5000)
 
     def clear_text(self):
         """Löscht den Text im Textfeld."""
