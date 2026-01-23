@@ -336,6 +336,12 @@ class MainWindow(QMainWindow):
         self.transfer_count = 0
         self.update_transfer_button()
 
+        # Transfer-Ablaufsteuerung
+        self.transfer_stage = None
+        self.transfer_timer = QTimer(self)
+        self.transfer_timer.timeout.connect(self.process_transfer_stage)
+        self.pending_final_text = None  # Speichert Text während Transfer
+
         # Timer für Live-Timestamp-Vorschau, Laufzeit und Post-Timer
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_timestamp)
@@ -347,26 +353,69 @@ class MainWindow(QMainWindow):
         self.update_post_timer()  # Initiale Post-Timer-Anzeige
 
     def on_copy_and_send(self):
+        # Schutz: Button bereits gesperrt?
+        if self.copy_button.isEnabled() is False:
+            return
+
         # Schutz: Nur möglich wenn Ziel aktiv ist
         if self.recorder_state != "ready":
             self.statusBar().showMessage("Kein Ziel aktiv – Übertragen nicht möglich", 3000)
             return
 
+        # Button sperren
+        self.copy_button.setEnabled(False)
+
+        # Text vorbereiten
         user_text = self.text_edit.toPlainText()
         timestamp = generate_timestamp()
         final_text = f"{timestamp}\n\n{user_text}"
         copy_to_clipboard(final_text)
+        self.pending_final_text = final_text
 
+        # Transfer-Ablauf starten
+        self.copy_button.setText("Einfügen…")
+        self.transfer_stage = "paste"
+        self.transfer_timer.start(700)
+
+    def process_transfer_stage(self):
+        """Verarbeitet die einzelnen Stufen des Transfer-Ablaufs."""
+        if self.transfer_stage == "paste":
+            self.copy_button.setText("3")
+            self.transfer_stage = "countdown_3"
+
+        elif self.transfer_stage == "countdown_3":
+            self.copy_button.setText("2")
+            self.transfer_stage = "countdown_2"
+
+        elif self.transfer_stage == "countdown_2":
+            self.copy_button.setText("1")
+            self.transfer_stage = "countdown_1"
+
+        elif self.transfer_stage == "countdown_1":
+            self.copy_button.setText("Absenden…")
+            self.transfer_stage = "send"
+
+        elif self.transfer_stage == "send":
+            self.execute_send()
+            self.transfer_timer.stop()
+
+    def execute_send(self):
+        """Führt den eigentlichen Sendevorgang aus."""
         try:
-            send_to_chatgpt(final_text)
+            send_to_chatgpt(self.pending_final_text)
             self.statusBar().showMessage("Gesendet an ChatGPT", 5000)
             # Post-Timer zurücksetzen
             self.last_post_time = datetime.now()
             # Zähler erhöhen
             self.transfer_count += 1
             self.update_transfer_button()
+            # Button wieder aktivieren
+            self.copy_button.setEnabled(True)
         except Exception as e:
             self.statusBar().showMessage(str(e), 5000)
+            # Bei Fehler: Button wieder aktivieren und Zähler zurücksetzen
+            self.update_transfer_button()
+            self.copy_button.setEnabled(True)
 
     def toggle_theme(self):
         self.is_dark = not self.is_dark
