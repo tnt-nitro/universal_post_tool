@@ -3,7 +3,7 @@
 # App identity
 APP_NAME = "gpt_time_stamp"
 APP_TITLE = "GPT Time Stamp"
-APP_VERSION = "0.1.0"
+APP_VERSION = "0.2.1"
 
 # Timestamp format
 TS_FORMAT = "%Y.%m.%d %H:%M:%S"
