@@ -212,6 +212,7 @@ class MainWindow(QMainWindow):
         self.position_status.setObjectName("positionStatus")
         self.position_status.setAlignment(
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        self.position_status.setFixedWidth(200)  # Feste Breite für konsistentes Layout
 
         self.post_timer_label = QLabel("Seit letztem Post: 00:00:00")
         self.post_timer_label.setObjectName("postTimerLabel")
