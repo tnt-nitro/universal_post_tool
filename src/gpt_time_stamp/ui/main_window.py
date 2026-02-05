@@ -441,6 +441,10 @@ class MainWindow(QMainWindow):
         # Startzeit für Post-Timer
         self.last_post_time = datetime.now()
 
+        # Timestamp des letzten erfolgreichen Sendens (für Statusbar)
+        self.last_send_timestamp = None
+        self.text_changed_after_send = False
+
         # Übertragen-Zähler initialisieren
         self.transfer_count = 0
         self.update_transfer_button()
@@ -525,7 +529,11 @@ class MainWindow(QMainWindow):
         """Führt den eigentlichen Sendevorgang aus."""
         try:
             send_to_chatgpt(self.pending_final_text)
-            self.statusBar().showMessage("Gesendet an ChatGPT", 5000)
+            # Timestamp für Statusbar speichern
+            self.last_send_timestamp = generate_timestamp()
+            self.text_changed_after_send = False
+            # Statusbar-Nachricht mit Timestamp (schwarz)
+            self.statusBar().showMessage(f"gesendet: {self.last_send_timestamp}", 5000)
             # Post-Timer zurücksetzen
             self.last_post_time = datetime.now()
             # Zähler erhöhen
@@ -621,6 +629,14 @@ class MainWindow(QMainWindow):
         # Prüfen, ob Text vorhanden ist
         has_text = len(self.text_edit.toPlainText().strip()) > 0
         
+        # Statusbar: Wenn nach dem Senden Text geändert wurde
+        if self.last_send_timestamp is not None and not self.text_changed_after_send:
+            self.text_changed_after_send = True
+            # Statusbar-Nachricht ausgrauen (ohne Timestamp)
+            self.statusBar().showMessage("gesendet: (Text geändert)", 5000)
+            # Statusbar-Styling für ausgegrauten Text
+            self.statusBar().setStyleSheet("color: #888888;")
+        
         # Übertragen-Button: Wenn kein Text vorhanden ist
         if not has_text:
             # Button deaktivieren, Text entfernen und visuell zurücksetzen
@@ -634,6 +650,10 @@ class MainWindow(QMainWindow):
             # Zähler und Erfolgs-Flag zurücksetzen
             self.transfer_count = 0
             self.transfer_success = False
+            # Statusbar zurücksetzen
+            self.last_send_timestamp = None
+            self.text_changed_after_send = False
+            self.statusBar().setStyleSheet("")
             return
         
         # Text vorhanden: Übertragen-Button aktualisieren
