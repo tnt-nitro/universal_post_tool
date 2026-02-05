@@ -39,6 +39,13 @@ QPushButton#copyButton:hover {
     background-color: #5fa8ff;
 }
 
+QPushButton#copyButton:disabled {
+    background-color: #cccccc;
+    color: #666666;
+    border-radius: 6px;
+    padding: 8px;
+}
+
 QPushButton#transferActive {
     background-color: #f0ad4e;
     color: black;
@@ -160,6 +167,13 @@ QPushButton#copyButton {
 
 QPushButton#copyButton:hover {
     background-color: #5fa8ff;
+}
+
+QPushButton#copyButton:disabled {
+    background-color: #cccccc;
+    color: #666666;
+    border-radius: 6px;
+    padding: 8px;
 }
 
 QPushButton#transferActive {
@@ -645,7 +659,18 @@ class MainWindow(QMainWindow):
 
     def update_transfer_button(self):
         """Aktualisiert den Text des Übertragen-Buttons mit aktuellem Zähler."""
-        self.copy_button.setText(f"Übertragen ({self.transfer_count})")
+        # Prüfen, ob Text vorhanden ist
+        has_text = len(self.text_edit.toPlainText().strip()) > 0
+        if not has_text:
+            # Kein Text: Button deaktivieren und Text entfernen
+            self.copy_button.setEnabled(False)
+            self.copy_button.setText("")
+        else:
+            # Text vorhanden: Normalen Text mit Zähler anzeigen
+            # Button nur aktivieren, wenn Ziel aktiv ist
+            if self.recorder_state == "ready":
+                self.copy_button.setEnabled(True)
+            self.copy_button.setText(f"Übertragen ({self.transfer_count})")
 
     def learn_send_position(self):
         """Lernt die Sendeposition von ChatGPT."""
@@ -720,8 +745,11 @@ class MainWindow(QMainWindow):
 
             self.recorder_state = "ready"
             self.update_recorder_ui()
-            # Button aktivieren wenn Ziel gesetzt
-            self.copy_button.setEnabled(True)
+            # Button aktivieren wenn Ziel gesetzt UND Text vorhanden ist
+            has_text = len(self.text_edit.toPlainText().strip()) > 0
+            if has_text:
+                self.copy_button.setEnabled(True)
+                self.update_transfer_button()
 
         record_once(on_position)
 
