@@ -618,6 +618,10 @@ class MainWindow(QMainWindow):
         else:
             self.setStyleSheet(LIGHT_THEME)
         self.update_transfer_button()
+        # Statusbar zurücksetzen
+        self.last_send_timestamp = None
+        self.text_changed_after_send = False
+        self.statusBar().setStyleSheet("")
         # Papierkorb-Button aktualisieren (wird auch durch textChanged getriggert, aber sicherheitshalber)
         self.update_clear_button()
 
