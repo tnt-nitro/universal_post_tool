@@ -6,15 +6,34 @@ class CodeBlockHighlighter(QSyntaxHighlighter):
     STATE_NONE = 0
     STATE_CODE = 1
 
-    def __init__(self, document):
+    def __init__(self, document, is_dark=False):
         super().__init__(document)
 
         self.code_format = QTextCharFormat()
-        self.code_format.setBackground(QColor("#2b2b2b"))
-        self.code_format.setForeground(QColor("#e6e6e6"))
+        self.is_dark = is_dark
+        self._update_format()
 
         # WICHTIG: Exakt 3 Backticks (```) - nicht 2!
         self.fence_re = QRegularExpression(r"^\s*```\s*$")
+    
+    def _update_format(self):
+        """Aktualisiert das Format basierend auf dem aktuellen Theme."""
+        if self.is_dark:
+            # DARK: Textbereich #2b2b2b -> Codeblock #1f1f1f (dunkler)
+            self.code_format.setBackground(QColor("#1f1f1f"))
+            self.code_format.setForeground(QColor("#ffffff"))
+        else:
+            # LIGHT: Textbereich #ffffff -> Codeblock #e0e0e0 (dunkler)
+            self.code_format.setBackground(QColor("#e0e0e0"))
+            self.code_format.setForeground(QColor("#000000"))
+    
+    def set_theme(self, is_dark):
+        """Setzt das Theme und aktualisiert das Format."""
+        if self.is_dark != is_dark:
+            self.is_dark = is_dark
+            self._update_format()
+            # Neu formatieren, damit Änderungen sichtbar werden
+            self.rehighlight()
 
     def highlightBlock(self, text: str) -> None:
         in_code = (self.previousBlockState() == self.STATE_CODE)

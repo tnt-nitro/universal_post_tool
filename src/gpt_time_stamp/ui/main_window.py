@@ -72,6 +72,39 @@ QPushButton#formatButton:hover {
     background-color: #d0d0d0;
 }
 
+QPushButton#dangerButton {
+    background-color: #d9534f;
+    color: white;
+    border-radius: 6px;
+    padding: 6px;
+}
+
+QPushButton#dangerButton:hover {
+    background-color: #c9302c;
+}
+
+QPushButton#dangerButtonDisabled {
+    background-color: #cccccc;
+    color: #666666;
+    border-radius: 6px;
+    padding: 6px;
+}
+
+QPushButton#dangerButtonDisabled:hover {
+    background-color: #cccccc;
+}
+
+QPushButton#transferSuccess {
+    background-color: #5cb85c;
+    color: white;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+QPushButton#transferSuccess:hover {
+    background-color: #4cae4c;
+}
+
 QLabel#timestampLabel {
     background-color: #e8e8e8;
     color: #000000;
@@ -162,6 +195,39 @@ QPushButton#formatButton:hover {
     background-color: #4a4a4a;
 }
 
+QPushButton#dangerButton {
+    background-color: #d9534f;
+    color: white;
+    border-radius: 6px;
+    padding: 6px;
+}
+
+QPushButton#dangerButton:hover {
+    background-color: #c9302c;
+}
+
+QPushButton#dangerButtonDisabled {
+    background-color: #555555;
+    color: #888888;
+    border-radius: 6px;
+    padding: 6px;
+}
+
+QPushButton#dangerButtonDisabled:hover {
+    background-color: #555555;
+}
+
+QPushButton#transferSuccess {
+    background-color: #5cb85c;
+    color: white;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+QPushButton#transferSuccess:hover {
+    background-color: #4cae4c;
+}
+
 QLabel#timestampLabel {
     background-color: #2b2b2b;
     color: #ffffff;
@@ -225,9 +291,11 @@ class MainWindow(QMainWindow):
 
         self.text_edit = QTextEdit()
         self.text_edit.setPlaceholderText("Text eingeben…")
+        # Signal für Textänderungen: Papierkorb-Button und Übertragen-Button aktualisieren
+        self.text_edit.textChanged.connect(self.on_text_changed)
 
-        # Codeblock-Highlighter aktivieren
-        self.highlighter = CodeBlockHighlighter(self.text_edit.document())
+        # Codeblock-Highlighter aktivieren (initial: Light Theme)
+        self.highlighter = CodeBlockHighlighter(self.text_edit.document(), is_dark=False)
 
         self.copy_button = QPushButton("Übertragen (0)")
         self.copy_button.setObjectName("copyButton")
@@ -235,6 +303,9 @@ class MainWindow(QMainWindow):
         # Initial deaktiviert - Ziel erforderlich
         self.copy_button.setEnabled(False)
         self.copy_button.clicked.connect(self.on_copy_and_send)
+        
+        # Flag für erfolgreiche Übertragung (für grüne Farbe)
+        self.transfer_success = False
 
         # Format-Buttons vertikal links
         self.format_layout = QVBoxLayout()
@@ -290,13 +361,15 @@ class MainWindow(QMainWindow):
         self.format_layout.setAlignment(
             Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
 
-        btn_clear = QPushButton("🗑️")
-        btn_clear.setObjectName("formatButton")
-        btn_clear.setFixedSize(BUTTON_SIZE, BUTTON_SIZE)
-        btn_clear.clicked.connect(self.clear_text)
+        self.btn_clear = QPushButton("🗑️")
+        self.btn_clear.setFixedSize(BUTTON_SIZE, BUTTON_SIZE)
+        self.btn_clear.clicked.connect(self.clear_text)
+        # Initial: ausgegraut (kein Text vorhanden)
+        self.btn_clear.setObjectName("dangerButtonDisabled")
+        self.btn_clear.setEnabled(False)
 
         bottom_layout = QHBoxLayout()
-        bottom_layout.addWidget(btn_clear)
+        bottom_layout.addWidget(self.btn_clear)
 
         self.copy_button.setMinimumHeight(BUTTON_SIZE)
         bottom_layout.addWidget(self.copy_button, stretch=1)
@@ -386,6 +459,9 @@ class MainWindow(QMainWindow):
 
         # Button sperren
         self.copy_button.setEnabled(False)
+        
+        # Erfolgs-Flag zurücksetzen (neuer Transfer startet)
+        self.transfer_success = False
 
         # Button visuell hervorheben (gelb/orange)
         self.copy_button.setObjectName("transferActive")
@@ -437,9 +513,10 @@ class MainWindow(QMainWindow):
             self.last_post_time = datetime.now()
             # Zähler erhöhen
             self.transfer_count += 1
+            self.transfer_success = True
             self.update_transfer_button()
-            # Button wieder aktivieren und visuell zurücksetzen
-            self.copy_button.setObjectName("copyButton")
+            # Button wieder aktivieren und grün machen (Erfolg)
+            self.copy_button.setObjectName("transferSuccess")
             if self.is_dark:
                 self.setStyleSheet(DARK_THEME)
             else:
@@ -464,6 +541,8 @@ class MainWindow(QMainWindow):
         else:
             self.setStyleSheet(LIGHT_THEME)
             self.theme_button.setText("☀️")
+        # Codeblock-Highlighter Theme aktualisieren
+        self.highlighter.set_theme(self.is_dark)
 
     def update_timestamp(self):
         """Aktualisiert die Live-Timestamp-Vorschau."""
@@ -506,7 +585,45 @@ class MainWindow(QMainWindow):
         self.text_edit.setFocus()
         # Zähler zurücksetzen
         self.transfer_count = 0
+        self.transfer_success = False
         self.update_transfer_button()
+        # Papierkorb-Button aktualisieren (wird auch durch textChanged getriggert, aber sicherheitshalber)
+        self.update_clear_button()
+
+    def on_text_changed(self):
+        """Wird aufgerufen, wenn sich der Text im Textfeld ändert."""
+        # Papierkorb-Button aktualisieren
+        self.update_clear_button()
+        # Übertragen-Button: Wenn Text geändert wurde und vorher erfolgreich übertragen wurde
+        if self.transfer_success:
+            # Zurücksetzen auf blau und Zähler auf 0
+            self.transfer_count = 0
+            self.transfer_success = False
+            self.update_transfer_button()
+            # Button visuell zurücksetzen (nur wenn Ziel aktiv)
+            if self.recorder_state == "ready":
+                self.copy_button.setObjectName("copyButton")
+                if self.is_dark:
+                    self.setStyleSheet(DARK_THEME)
+                else:
+                    self.setStyleSheet(LIGHT_THEME)
+
+    def update_clear_button(self):
+        """Aktualisiert den Papierkorb-Button basierend auf Textinhalt."""
+        has_text = len(self.text_edit.toPlainText().strip()) > 0
+        if has_text:
+            # Text vorhanden: rot und aktiviert
+            self.btn_clear.setObjectName("dangerButton")
+            self.btn_clear.setEnabled(True)
+        else:
+            # Kein Text: ausgegraut und deaktiviert
+            self.btn_clear.setObjectName("dangerButtonDisabled")
+            self.btn_clear.setEnabled(False)
+        # Stylesheet neu anwenden
+        if self.is_dark:
+            self.setStyleSheet(DARK_THEME)
+        else:
+            self.setStyleSheet(LIGHT_THEME)
 
     def update_transfer_button(self):
         """Aktualisiert den Text des Übertragen-Buttons mit aktuellem Zähler."""
