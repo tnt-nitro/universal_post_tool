@@ -600,6 +600,12 @@ class MainWindow(QMainWindow):
         # Zähler zurücksetzen
         self.transfer_count = 0
         self.transfer_success = False
+        # Button visuell zurücksetzen (von grün auf ausgegraut/leer)
+        self.copy_button.setObjectName("copyButton")
+        if self.is_dark:
+            self.setStyleSheet(DARK_THEME)
+        else:
+            self.setStyleSheet(LIGHT_THEME)
         self.update_transfer_button()
         # Papierkorb-Button aktualisieren (wird auch durch textChanged getriggert, aber sicherheitshalber)
         self.update_clear_button()
