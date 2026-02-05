@@ -3,7 +3,7 @@
 # App identity
 APP_NAME = "gpt_time_stamp"
 APP_TITLE = "Universal Post Tool"
-APP_VERSION = "0.3.6"
+APP_VERSION = "0.4.0"
 
 # Timestamp format
 TS_FORMAT = "%Y.%m.%d %H:%M:%S"
