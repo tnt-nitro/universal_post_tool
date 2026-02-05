@@ -297,10 +297,10 @@ class MainWindow(QMainWindow):
         # Codeblock-Highlighter aktivieren (initial: Light Theme)
         self.highlighter = CodeBlockHighlighter(self.text_edit.document(), is_dark=False)
 
-        self.copy_button = QPushButton("Übertragen (0)")
+        self.copy_button = QPushButton("")
         self.copy_button.setObjectName("copyButton")
         self.copy_button.setFixedHeight(36)
-        # Initial deaktiviert - Ziel erforderlich
+        # Initial deaktiviert - Ziel erforderlich UND Text vorhanden
         self.copy_button.setEnabled(False)
         self.copy_button.clicked.connect(self.on_copy_and_send)
         
@@ -594,7 +594,19 @@ class MainWindow(QMainWindow):
         """Wird aufgerufen, wenn sich der Text im Textfeld ändert."""
         # Papierkorb-Button aktualisieren
         self.update_clear_button()
-        # Übertragen-Button: Wenn Text geändert wurde und vorher erfolgreich übertragen wurde
+        
+        # Prüfen, ob Text vorhanden ist
+        has_text = len(self.text_edit.toPlainText().strip()) > 0
+        
+        # Übertragen-Button: Wenn kein Text vorhanden ist
+        if not has_text:
+            # Button deaktivieren und Text entfernen
+            self.copy_button.setEnabled(False)
+            self.copy_button.setText("")
+            return
+        
+        # Text vorhanden: Übertragen-Button aktualisieren
+        # Wenn Text geändert wurde und vorher erfolgreich übertragen wurde
         if self.transfer_success:
             # Zurücksetzen auf blau und Zähler auf 0
             self.transfer_count = 0
@@ -603,10 +615,16 @@ class MainWindow(QMainWindow):
             # Button visuell zurücksetzen (nur wenn Ziel aktiv)
             if self.recorder_state == "ready":
                 self.copy_button.setObjectName("copyButton")
+                self.copy_button.setEnabled(True)
                 if self.is_dark:
                     self.setStyleSheet(DARK_THEME)
                 else:
                     self.setStyleSheet(LIGHT_THEME)
+        else:
+            # Text vorhanden, aber kein Erfolg: Button aktivieren wenn Ziel aktiv
+            if self.recorder_state == "ready":
+                self.copy_button.setEnabled(True)
+                self.update_transfer_button()
 
     def update_clear_button(self):
         """Aktualisiert den Papierkorb-Button basierend auf Textinhalt."""
