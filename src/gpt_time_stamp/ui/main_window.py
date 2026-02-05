@@ -532,8 +532,8 @@ class MainWindow(QMainWindow):
             # Timestamp für Statusbar speichern
             self.last_send_timestamp = generate_timestamp()
             self.text_changed_after_send = False
-            # Statusbar-Nachricht mit Timestamp (schwarz)
-            self.statusBar().showMessage(f"gesendet: {self.last_send_timestamp}", 5000)
+            # Statusbar-Nachricht mit Timestamp (schwarz, dauerhaft)
+            self.statusBar().showMessage(f"gesendet: {self.last_send_timestamp}", 0)
             # Post-Timer zurücksetzen
             self.last_post_time = datetime.now()
             # Zähler erhöhen
@@ -636,8 +636,8 @@ class MainWindow(QMainWindow):
         # Statusbar: Wenn nach dem Senden Text geändert wurde
         if self.last_send_timestamp is not None and not self.text_changed_after_send:
             self.text_changed_after_send = True
-            # Statusbar-Nachricht ausgrauen (ohne Timestamp)
-            self.statusBar().showMessage("gesendet: (Text geändert)", 5000)
+            # Statusbar-Nachricht ausgrauen (ohne Timestamp, dauerhaft)
+            self.statusBar().showMessage("gesendet: (Text geändert)", 0)
             # Statusbar-Styling für ausgegrauten Text
             self.statusBar().setStyleSheet("color: #888888;")
         
