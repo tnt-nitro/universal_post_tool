@@ -677,9 +677,13 @@ class MainWindow(QMainWindow):
             else:
                 self.setStyleSheet(LIGHT_THEME)
         
-        # Button aktivieren wenn Ziel aktiv
+        # Button aktivieren wenn Ziel aktiv und Text vorhanden
         if self.recorder_state == "ready":
             self.copy_button.setEnabled(True)
+            self.update_transfer_button()
+        else:
+            # Ziel nicht aktiv: Button deaktivieren, aber Text anzeigen
+            self.copy_button.setEnabled(False)
             self.update_transfer_button()
 
     def update_clear_button(self):
