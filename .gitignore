@@ -40,3 +40,9 @@ Thumbs.db
 # Projekt-spezifisch
 config.json
 *.log
+
+# Persönliche Startskripte (enthalten lokale Pfade)
+start.bat
+start.ps1
+*.bat
+*.ps1
