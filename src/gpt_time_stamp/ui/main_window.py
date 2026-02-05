@@ -39,6 +39,24 @@ QPushButton#copyButton:hover {
     background-color: #5fa8ff;
 }
 
+QPushButton#copyButton:disabled {
+    background-color: #cccccc;
+    color: #666666;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+QPushButton#transferActive {
+    background-color: #f0ad4e;
+    color: black;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+QPushButton#transferActive:hover {
+    background-color: #f0ad4e;
+}
+
 QPushButton#themeButton {
     background-color: #e0e0e0;
     color: #000000;
@@ -59,6 +77,39 @@ QPushButton#formatButton {
 
 QPushButton#formatButton:hover {
     background-color: #d0d0d0;
+}
+
+QPushButton#dangerButton {
+    background-color: #d9534f;
+    color: white;
+    border-radius: 6px;
+    padding: 6px;
+}
+
+QPushButton#dangerButton:hover {
+    background-color: #c9302c;
+}
+
+QPushButton#dangerButtonDisabled {
+    background-color: #cccccc;
+    color: #666666;
+    border-radius: 6px;
+    padding: 6px;
+}
+
+QPushButton#dangerButtonDisabled:hover {
+    background-color: #cccccc;
+}
+
+QPushButton#transferSuccess {
+    background-color: #5cb85c;
+    color: white;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+QPushButton#transferSuccess:hover {
+    background-color: #4cae4c;
 }
 
 QLabel#timestampLabel {
@@ -118,6 +169,24 @@ QPushButton#copyButton:hover {
     background-color: #5fa8ff;
 }
 
+QPushButton#copyButton:disabled {
+    background-color: #cccccc;
+    color: #666666;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+QPushButton#transferActive {
+    background-color: #f0ad4e;
+    color: black;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+QPushButton#transferActive:hover {
+    background-color: #f0ad4e;
+}
+
 QPushButton#themeButton {
     background-color: #3a3a3a;
     color: white;
@@ -138,6 +207,39 @@ QPushButton#formatButton {
 
 QPushButton#formatButton:hover {
     background-color: #4a4a4a;
+}
+
+QPushButton#dangerButton {
+    background-color: #d9534f;
+    color: white;
+    border-radius: 6px;
+    padding: 6px;
+}
+
+QPushButton#dangerButton:hover {
+    background-color: #c9302c;
+}
+
+QPushButton#dangerButtonDisabled {
+    background-color: #555555;
+    color: #888888;
+    border-radius: 6px;
+    padding: 6px;
+}
+
+QPushButton#dangerButtonDisabled:hover {
+    background-color: #555555;
+}
+
+QPushButton#transferSuccess {
+    background-color: #5cb85c;
+    color: white;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+QPushButton#transferSuccess:hover {
+    background-color: #4cae4c;
 }
 
 QLabel#timestampLabel {
@@ -203,14 +305,21 @@ class MainWindow(QMainWindow):
 
         self.text_edit = QTextEdit()
         self.text_edit.setPlaceholderText("Text eingeben…")
-        
-        # Codeblock-Highlighter aktivieren
-        self.highlighter = CodeBlockHighlighter(self.text_edit.document())
+        # Signal für Textänderungen: Papierkorb-Button und Übertragen-Button aktualisieren
+        self.text_edit.textChanged.connect(self.on_text_changed)
 
-        self.copy_button = QPushButton("In Zwischenablage kopieren")
+        # Codeblock-Highlighter aktivieren (initial: Light Theme)
+        self.highlighter = CodeBlockHighlighter(self.text_edit.document(), is_dark=False)
+
+        self.copy_button = QPushButton("")
         self.copy_button.setObjectName("copyButton")
         self.copy_button.setFixedHeight(36)
+        # Initial deaktiviert - Ziel erforderlich UND Text vorhanden
+        self.copy_button.setEnabled(False)
         self.copy_button.clicked.connect(self.on_copy_and_send)
+        
+        # Flag für erfolgreiche Übertragung (für grüne Farbe)
+        self.transfer_success = False
 
         # Format-Buttons vertikal links
         self.format_layout = QVBoxLayout()
@@ -266,13 +375,15 @@ class MainWindow(QMainWindow):
         self.format_layout.setAlignment(
             Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
 
-        btn_clear = QPushButton("🗑️")
-        btn_clear.setObjectName("formatButton")
-        btn_clear.setFixedSize(BUTTON_SIZE, BUTTON_SIZE)
-        btn_clear.clicked.connect(self.clear_text)
+        self.btn_clear = QPushButton("🗑️")
+        self.btn_clear.setFixedSize(BUTTON_SIZE, BUTTON_SIZE)
+        self.btn_clear.clicked.connect(self.clear_text)
+        # Initial: ausgegraut (kein Text vorhanden)
+        self.btn_clear.setObjectName("dangerButtonDisabled")
+        self.btn_clear.setEnabled(False)
 
         bottom_layout = QHBoxLayout()
-        bottom_layout.addWidget(btn_clear)
+        bottom_layout.addWidget(self.btn_clear)
 
         self.copy_button.setMinimumHeight(BUTTON_SIZE)
         bottom_layout.addWidget(self.copy_button, stretch=1)
@@ -330,6 +441,21 @@ class MainWindow(QMainWindow):
         # Startzeit für Post-Timer
         self.last_post_time = datetime.now()
 
+        # Timestamp des letzten erfolgreichen Sendens (für Statusbar)
+        self.last_send_timestamp = None
+        self.text_changed_after_send = False
+
+        # Übertragen-Zähler initialisieren
+        self.transfer_count = 0
+        self.update_transfer_button()
+
+        # Transfer-Ablaufsteuerung
+        self.transfer_stage = None
+        self.transfer_timer = QTimer(self)
+        self.transfer_timer.timeout.connect(self.process_transfer_stage)
+        self.pending_final_text = None  # Speichert Text während Transfer
+        self.transfer_stage = None  # None = kein Transfer aktiv
+
         # Timer für Live-Timestamp-Vorschau, Laufzeit und Post-Timer
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_timestamp)
@@ -341,18 +467,96 @@ class MainWindow(QMainWindow):
         self.update_post_timer()  # Initiale Post-Timer-Anzeige
 
     def on_copy_and_send(self):
+        # Schutz: Button bereits gesperrt?
+        if self.copy_button.isEnabled() is False:
+            return
+
+        # Schutz: Nur möglich wenn Ziel aktiv ist
+        if self.recorder_state != "ready":
+            self.statusBar().showMessage("Kein Ziel aktiv – Übertragen nicht möglich", 3000)
+            return
+
+        # Button sperren
+        self.copy_button.setEnabled(False)
+        
+        # Erfolgs-Flag zurücksetzen (neuer Transfer startet)
+        self.transfer_success = False
+
+        # Button visuell hervorheben (gelb/orange)
+        self.copy_button.setObjectName("transferActive")
+        if self.is_dark:
+            self.setStyleSheet(DARK_THEME)
+        else:
+            self.setStyleSheet(LIGHT_THEME)
+
+        # Text vorbereiten
         user_text = self.text_edit.toPlainText()
         timestamp = generate_timestamp()
         final_text = f"{timestamp}\n\n{user_text}"
         copy_to_clipboard(final_text)
+        self.pending_final_text = final_text
 
+        # Transfer-Ablauf starten
+        self.copy_button.setText("Einfügen…")
+        self.transfer_stage = "paste"
+        self.transfer_timer.start(700)
+
+    def process_transfer_stage(self):
+        """Verarbeitet die einzelnen Stufen des Transfer-Ablaufs."""
+        if self.transfer_stage == "paste":
+            self.copy_button.setText("3")
+            self.transfer_stage = "countdown_3"
+
+        elif self.transfer_stage == "countdown_3":
+            self.copy_button.setText("2")
+            self.transfer_stage = "countdown_2"
+
+        elif self.transfer_stage == "countdown_2":
+            self.copy_button.setText("1")
+            self.transfer_stage = "countdown_1"
+
+        elif self.transfer_stage == "countdown_1":
+            self.copy_button.setText("Absenden…")
+            self.transfer_stage = "send"
+
+        elif self.transfer_stage == "send":
+            self.execute_send()
+            self.transfer_timer.stop()
+            # Transfer-Stage zurücksetzen
+            self.transfer_stage = None
+
+    def execute_send(self):
+        """Führt den eigentlichen Sendevorgang aus."""
         try:
-            send_to_chatgpt(final_text)
-            self.statusBar().showMessage("Gesendet an ChatGPT", 5000)
+            send_to_chatgpt(self.pending_final_text)
+            # Timestamp für Statusbar speichern
+            self.last_send_timestamp = generate_timestamp()
+            self.text_changed_after_send = False
+            # Statusbar-Nachricht mit Timestamp (schwarz, dauerhaft)
+            self.statusBar().showMessage(f"gesendet: {self.last_send_timestamp}", 0)
             # Post-Timer zurücksetzen
             self.last_post_time = datetime.now()
+            # Zähler erhöhen
+            self.transfer_count += 1
+            self.transfer_success = True
+            self.update_transfer_button()
+            # Button wieder aktivieren und grün machen (Erfolg)
+            self.copy_button.setObjectName("transferSuccess")
+            if self.is_dark:
+                self.setStyleSheet(DARK_THEME)
+            else:
+                self.setStyleSheet(LIGHT_THEME)
+            self.copy_button.setEnabled(True)
         except Exception as e:
             self.statusBar().showMessage(str(e), 5000)
+            # Bei Fehler: Button wieder aktivieren und visuell zurücksetzen
+            self.copy_button.setObjectName("copyButton")
+            if self.is_dark:
+                self.setStyleSheet(DARK_THEME)
+            else:
+                self.setStyleSheet(LIGHT_THEME)
+            self.update_transfer_button()
+            self.copy_button.setEnabled(True)
 
     def toggle_theme(self):
         self.is_dark = not self.is_dark
@@ -362,6 +566,8 @@ class MainWindow(QMainWindow):
         else:
             self.setStyleSheet(LIGHT_THEME)
             self.theme_button.setText("☀️")
+        # Codeblock-Highlighter Theme aktualisieren
+        self.highlighter.set_theme(self.is_dark)
 
     def update_timestamp(self):
         """Aktualisiert die Live-Timestamp-Vorschau."""
@@ -402,6 +608,115 @@ class MainWindow(QMainWindow):
         """Löscht den Text im Textfeld."""
         self.text_edit.clear()
         self.text_edit.setFocus()
+        # Zähler zurücksetzen
+        self.transfer_count = 0
+        self.transfer_success = False
+        # Button visuell zurücksetzen (von grün auf ausgegraut/leer)
+        self.copy_button.setObjectName("copyButton")
+        if self.is_dark:
+            self.setStyleSheet(DARK_THEME)
+        else:
+            self.setStyleSheet(LIGHT_THEME)
+        self.update_transfer_button()
+        # Statusbar komplett zurücksetzen
+        self.last_send_timestamp = None
+        self.text_changed_after_send = False
+        self.statusBar().clearMessage()
+        self.statusBar().setStyleSheet("")
+        # Papierkorb-Button aktualisieren (wird auch durch textChanged getriggert, aber sicherheitshalber)
+        self.update_clear_button()
+
+    def on_text_changed(self):
+        """Wird aufgerufen, wenn sich der Text im Textfeld ändert."""
+        # Papierkorb-Button aktualisieren
+        self.update_clear_button()
+        
+        # Prüfen, ob Text vorhanden ist
+        has_text = len(self.text_edit.toPlainText().strip()) > 0
+        
+        # Statusbar: Wenn nach dem Senden Text geändert wurde
+        if self.last_send_timestamp is not None and not self.text_changed_after_send:
+            self.text_changed_after_send = True
+            # Statusbar-Nachricht ausgrauen (ohne Timestamp, dauerhaft)
+            self.statusBar().showMessage("gesendet: (Text geändert)", 0)
+            # Statusbar-Styling für ausgegrauten Text
+            self.statusBar().setStyleSheet("color: #888888;")
+        
+        # Übertragen-Button: Wenn kein Text vorhanden ist
+        if not has_text:
+            # Button deaktivieren, Text entfernen und visuell zurücksetzen
+            self.copy_button.setEnabled(False)
+            self.copy_button.setText("")
+            self.copy_button.setObjectName("copyButton")
+            if self.is_dark:
+                self.setStyleSheet(DARK_THEME)
+            else:
+                self.setStyleSheet(LIGHT_THEME)
+            # Zähler und Erfolgs-Flag zurücksetzen
+            self.transfer_count = 0
+            self.transfer_success = False
+            # Statusbar komplett zurücksetzen
+            self.last_send_timestamp = None
+            self.text_changed_after_send = False
+            self.statusBar().clearMessage()
+            self.statusBar().setStyleSheet("")
+            return
+        
+        # Text vorhanden: Übertragen-Button aktualisieren
+        # Wenn Text geändert wurde und vorher erfolgreich übertragen wurde
+        if self.transfer_success:
+            # Zurücksetzen auf blau und Zähler auf 0
+            self.transfer_count = 0
+            self.transfer_success = False
+        
+        # Button visuell auf blau setzen (wenn nicht gerade Transfer läuft)
+        if self.transfer_stage is None:
+            self.copy_button.setObjectName("copyButton")
+            if self.is_dark:
+                self.setStyleSheet(DARK_THEME)
+            else:
+                self.setStyleSheet(LIGHT_THEME)
+        
+        # Button aktivieren wenn Ziel aktiv und Text vorhanden
+        if self.recorder_state == "ready":
+            self.copy_button.setEnabled(True)
+            self.update_transfer_button()
+        else:
+            # Ziel nicht aktiv: Button deaktivieren, aber Text anzeigen
+            self.copy_button.setEnabled(False)
+            self.update_transfer_button()
+
+    def update_clear_button(self):
+        """Aktualisiert den Papierkorb-Button basierend auf Textinhalt."""
+        has_text = len(self.text_edit.toPlainText().strip()) > 0
+        if has_text:
+            # Text vorhanden: rot und aktiviert
+            self.btn_clear.setObjectName("dangerButton")
+            self.btn_clear.setEnabled(True)
+        else:
+            # Kein Text: ausgegraut und deaktiviert
+            self.btn_clear.setObjectName("dangerButtonDisabled")
+            self.btn_clear.setEnabled(False)
+        # Stylesheet neu anwenden
+        if self.is_dark:
+            self.setStyleSheet(DARK_THEME)
+        else:
+            self.setStyleSheet(LIGHT_THEME)
+
+    def update_transfer_button(self):
+        """Aktualisiert den Text des Übertragen-Buttons mit aktuellem Zähler."""
+        # Prüfen, ob Text vorhanden ist
+        has_text = len(self.text_edit.toPlainText().strip()) > 0
+        if not has_text:
+            # Kein Text: Button deaktivieren und Text entfernen
+            self.copy_button.setEnabled(False)
+            self.copy_button.setText("")
+        else:
+            # Text vorhanden: Normalen Text mit Zähler anzeigen
+            # Button nur aktivieren, wenn Ziel aktiv ist
+            if self.recorder_state == "ready":
+                self.copy_button.setEnabled(True)
+            self.copy_button.setText(f"Übertragen ({self.transfer_count})")
 
     def learn_send_position(self):
         """Lernt die Sendeposition von ChatGPT."""
@@ -411,6 +726,7 @@ class MainWindow(QMainWindow):
             save_config(config)
             self.recorder_state = "idle"
             self.update_recorder_ui()
+            self.copy_button.setEnabled(False)  # Button deaktivieren bei Reset
             return
 
         if self.recorder_state == "idle":
@@ -454,6 +770,8 @@ class MainWindow(QMainWindow):
                 # kein Klick erfolgt -> Reset
                 self.recorder_state = "idle"
                 self.update_recorder_ui()
+                # Button deaktivieren bei Timeout
+                self.copy_button.setEnabled(False)
             return
         self.update_recorder_ui()
 
@@ -473,6 +791,11 @@ class MainWindow(QMainWindow):
 
             self.recorder_state = "ready"
             self.update_recorder_ui()
+            # Button aktivieren wenn Ziel gesetzt UND Text vorhanden ist
+            has_text = len(self.text_edit.toPlainText().strip()) > 0
+            if has_text:
+                self.copy_button.setEnabled(True)
+                self.update_transfer_button()
 
         record_once(on_position)
 
