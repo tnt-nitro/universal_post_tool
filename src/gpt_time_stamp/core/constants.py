@@ -2,7 +2,7 @@
 
 # App identity
 APP_NAME = "gpt_time_stamp"
-APP_TITLE = "GPT Time Stamp"
+APP_TITLE = "Universal Post Tool"
 APP_VERSION = "0.3.4"
 
 # Timestamp format
