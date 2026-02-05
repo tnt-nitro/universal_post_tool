@@ -450,6 +450,7 @@ class MainWindow(QMainWindow):
         self.transfer_timer = QTimer(self)
         self.transfer_timer.timeout.connect(self.process_transfer_stage)
         self.pending_final_text = None  # Speichert Text während Transfer
+        self.transfer_stage = None  # None = kein Transfer aktiv
 
         # Timer für Live-Timestamp-Vorschau, Laufzeit und Post-Timer
         self.timer = QTimer()
@@ -517,6 +518,8 @@ class MainWindow(QMainWindow):
         elif self.transfer_stage == "send":
             self.execute_send()
             self.transfer_timer.stop()
+            # Transfer-Stage zurücksetzen
+            self.transfer_stage = None
 
     def execute_send(self):
         """Führt den eigentlichen Sendevorgang aus."""
@@ -620,9 +623,17 @@ class MainWindow(QMainWindow):
         
         # Übertragen-Button: Wenn kein Text vorhanden ist
         if not has_text:
-            # Button deaktivieren und Text entfernen
+            # Button deaktivieren, Text entfernen und visuell zurücksetzen
             self.copy_button.setEnabled(False)
             self.copy_button.setText("")
+            self.copy_button.setObjectName("copyButton")
+            if self.is_dark:
+                self.setStyleSheet(DARK_THEME)
+            else:
+                self.setStyleSheet(LIGHT_THEME)
+            # Zähler und Erfolgs-Flag zurücksetzen
+            self.transfer_count = 0
+            self.transfer_success = False
             return
         
         # Text vorhanden: Übertragen-Button aktualisieren
@@ -631,20 +642,19 @@ class MainWindow(QMainWindow):
             # Zurücksetzen auf blau und Zähler auf 0
             self.transfer_count = 0
             self.transfer_success = False
+        
+        # Button visuell auf blau setzen (wenn nicht gerade Transfer läuft)
+        if self.transfer_stage is None:
+            self.copy_button.setObjectName("copyButton")
+            if self.is_dark:
+                self.setStyleSheet(DARK_THEME)
+            else:
+                self.setStyleSheet(LIGHT_THEME)
+        
+        # Button aktivieren wenn Ziel aktiv
+        if self.recorder_state == "ready":
+            self.copy_button.setEnabled(True)
             self.update_transfer_button()
-            # Button visuell zurücksetzen (nur wenn Ziel aktiv)
-            if self.recorder_state == "ready":
-                self.copy_button.setObjectName("copyButton")
-                self.copy_button.setEnabled(True)
-                if self.is_dark:
-                    self.setStyleSheet(DARK_THEME)
-                else:
-                    self.setStyleSheet(LIGHT_THEME)
-        else:
-            # Text vorhanden, aber kein Erfolg: Button aktivieren wenn Ziel aktiv
-            if self.recorder_state == "ready":
-                self.copy_button.setEnabled(True)
-                self.update_transfer_button()
 
     def update_clear_button(self):
         """Aktualisiert den Papierkorb-Button basierend auf Textinhalt."""
