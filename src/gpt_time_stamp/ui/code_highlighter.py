@@ -19,8 +19,8 @@ class CodeBlockHighlighter(QSyntaxHighlighter):
     def _update_format(self):
         """Aktualisiert das Format basierend auf dem aktuellen Theme."""
         if self.is_dark:
-            # DARK: Textbereich #2b2b2b -> Codeblock #1f1f1f (dunkler)
-            self.code_format.setBackground(QColor("#1f1f1f"))
+            # DARK: Textbereich #2b2b2b -> Codeblock #3a3a3a (heller)
+            self.code_format.setBackground(QColor("#3a3a3a"))
             self.code_format.setForeground(QColor("#ffffff"))
         else:
             # LIGHT: Textbereich #ffffff -> Codeblock #e0e0e0 (dunkler)
