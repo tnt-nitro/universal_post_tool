@@ -1,9 +1,9 @@
-"""Konstanten für GPT Time Stamp."""
+"""Konstanten für Universal Post Tool."""
 
 # App identity
-APP_NAME = "gpt_time_stamp"
-APP_TITLE = "GPT Time Stamp"
-APP_VERSION = "0.1.0"
+APP_NAME = "universal_post_tool"
+APP_TITLE = "Universal Post Tool"
+APP_VERSION = "1.0.0"
 
 # Timestamp format
 TS_FORMAT = "%Y.%m.%d %H:%M:%S"

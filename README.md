@@ -2,6 +2,8 @@
 
 Ein lokales Python-basiertes GUI-Tool zur Generierung deutscher ISO-ähnlicher Zeitstempel und deren Einfügung in Text für Clipboard-basierte Posts.
 
+![Universal Post Tool v1.0.0](Screenshoots/universal_post_tool_v1.0.0_screenshoot_202602081409.JPG)
+
 ## Was ist das Universal Post Tool?
 
 - **Automatische Zeitstempel-Generierung**: Erstellt deutsche Zeitstempel im Format `YYYY.MM.DD HH:MM:SS | Wochentag`

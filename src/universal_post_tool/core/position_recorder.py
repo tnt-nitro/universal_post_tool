@@ -1,5 +1,5 @@
 from pynput import mouse
-from gpt_time_stamp.core.config import load_config, save_config
+from universal_post_tool.core.config import load_config, save_config
 
 
 def record_once(callback):

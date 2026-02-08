@@ -1,4 +1,4 @@
-# GPT Time Stamp
+# Universal Post Tool
 
 Ein Tool zur Verwaltung und Konvertierung von Zeitstempeln mit GPT-Integration.
 
@@ -11,7 +11,7 @@ pip install -e .
 ## Verwendung
 
 ```bash
-python -m gpt_time_stamp.app
+python -m universal_post_tool.app
 ```
 
 ## Entwicklung

@@ -6,12 +6,12 @@ from PySide6.QtGui import QTextCursor
 from PySide6.QtCore import QTimer, Qt
 from datetime import datetime
 import threading
-from gpt_time_stamp.core.timestamp import generate_timestamp
-from gpt_time_stamp.core.clipboard import copy_to_clipboard
-from gpt_time_stamp.core.position_recorder import record_send_position, record_once
-from gpt_time_stamp.core.config import load_config, save_config
-from gpt_time_stamp.core.sender import send_to_chatgpt
-from gpt_time_stamp.core.constants import APP_TITLE, APP_VERSION, WINDOW_WIDTH, WINDOW_HEIGHT
+from universal_post_tool.core.timestamp import generate_timestamp
+from universal_post_tool.core.clipboard import copy_to_clipboard
+from universal_post_tool.core.position_recorder import record_send_position, record_once
+from universal_post_tool.core.config import load_config, save_config
+from universal_post_tool.core.sender import send_to_chatgpt
+from universal_post_tool.core.constants import APP_TITLE, APP_VERSION, WINDOW_WIDTH, WINDOW_HEIGHT
 
 
 LIGHT_THEME = """

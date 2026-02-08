@@ -1,7 +1,7 @@
 import sys
 import os
 from PySide6.QtWidgets import QApplication
-from gpt_time_stamp.ui.main_window import MainWindow
+from universal_post_tool.ui.main_window import MainWindow
 
 # DPI-Awareness Warnung unterdrücken (optional)
 os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "0"

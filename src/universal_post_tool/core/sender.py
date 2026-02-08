@@ -1,6 +1,6 @@
 import pyautogui
 import time
-from gpt_time_stamp.core.config import load_config
+from universal_post_tool.core.config import load_config
 
 
 def send_to_chatgpt(text: str):
